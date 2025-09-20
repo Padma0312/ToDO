@@ -336,9 +336,11 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
     async generateCatMessage(taskText) {
         // If no AI credentials, fall back to static messages
         if (!this.apiSettings.endpoint || !this.apiSettings.apiKey) {
+            console.log('❌ No AI credentials configured. Endpoint:', !!this.apiSettings.endpoint, 'API Key:', !!this.apiSettings.apiKey);
             return this.getRandomStaticMessage();
         }
 
+        console.log('🤖 Starting AI cat message generation for:', taskText);
         try {
             const prompt = `You are a cute, witty cat assistant in a to-do app. The user just added this task: "${taskText}"
 
@@ -362,6 +364,7 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
             
             const url = `${endpoint}/openai/deployments/${this.apiSettings.deploymentName}/chat/completions?api-version=2024-02-15-preview`;
 
+            console.log('🌐 Making AI request to:', url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -385,11 +388,14 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
             });
 
             if (!response.ok) {
-                console.warn('AI cat message failed, using fallback. Status:', response.status);
+                console.warn('❌ AI cat message API call failed. Status:', response.status);
+                const errorText = await response.text();
+                console.warn('Error details:', errorText);
                 return this.getRandomStaticMessage();
             }
 
             const data = await response.json();
+            console.log('✅ AI response received:', data);
             const aiMessage = data.choices[0].message.content.trim();
             
             // Clean up the message (remove quotes if present)
@@ -397,15 +403,15 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
             
             // Validate the message isn't too long
             if (cleanMessage.length > 200) {
-                console.warn('AI message too long, using fallback');
+                console.warn('⚠️ AI message too long, using fallback. Length:', cleanMessage.length);
                 return this.getRandomStaticMessage();
             }
             
-            console.log('🤖 AI Cat Message:', cleanMessage);
+            console.log('🎉 AI Cat Message generated successfully:', cleanMessage);
             return cleanMessage;
             
         } catch (error) {
-            console.warn('AI cat message error:', error);
+            console.error('❌ AI cat message error:', error);
             return this.getRandomStaticMessage();
         }
     }
@@ -414,9 +420,26 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
         return this.catMessages[Math.floor(Math.random() * this.catMessages.length)];
     }
 
+    // Debug function to check AI settings
+    debugAISettings() {
+        console.log('🔍 Current AI Settings Debug:');
+        console.log('Endpoint:', this.apiSettings.endpoint ? '✅ Set' : '❌ Not set');
+        console.log('API Key:', this.apiSettings.apiKey ? '✅ Set' : '❌ Not set');
+        console.log('Deployment:', this.apiSettings.deploymentName);
+        
+        if (this.apiSettings.endpoint && this.apiSettings.apiKey) {
+            console.log('✅ AI should be working for cat messages');
+        } else {
+            console.log('❌ Missing AI credentials - using static messages');
+        }
+    }
+
     // Cute Cat Feature
     async showCat(taskText = null) {
         console.log('🐱 showCat() called with task:', taskText);
+        
+        // Debug AI settings
+        this.debugAISettings();
         
         // Check if elements exist
         if (!this.catContainer || !this.speechBubble) {
