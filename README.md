@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # My To Do App
 
 A simple, elegant to-do list application built with HTML, CSS, and JavaScript.
