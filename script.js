@@ -458,11 +458,7 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
         let message;
         if (taskText && this.apiSettings.endpoint && this.apiSettings.apiKey) {
             console.log('🤖 Generating AI cat message for task:', taskText);
-            this.speechBubble.textContent = "Let me think of something witty... 🤔";
-            this.speechBubble.classList.add('show', 'thinking');
-            
             message = await this.generateCatMessage(taskText);
-            this.speechBubble.classList.remove('thinking');
         } else {
             if (!taskText) {
                 console.log('📝 No task text provided, using static message');
