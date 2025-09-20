@@ -1,7 +1,9 @@
 class TodoApp {
     constructor() {
         this.tasks = [];
+        this.trashedTasks = [];
         this.taskCounter = 0;
+        this.currentTab = 'active';
         this.apiSettings = {
             endpoint: '',
             apiKey: '',
@@ -32,7 +34,10 @@ class TodoApp {
     init() {
         this.taskInput = document.getElementById('taskInput');
         this.addTaskBtn = document.getElementById('addTaskBtn');
+        this.clearAllBtn = document.getElementById('clearAllBtn');
         this.tasksContainer = document.getElementById('tasksContainer');
+        this.trashContainer = document.getElementById('trashContainer');
+        this.tabBtns = document.querySelectorAll('.tab-btn');
         this.settingsBtn = document.getElementById('settingsBtn');
         this.settingsModal = document.getElementById('settingsModal');
         this.closeModal = document.querySelector('.close');
@@ -47,8 +52,16 @@ class TodoApp {
 
         // Event listeners
         this.addTaskBtn.addEventListener('click', () => this.addTask());
+        this.clearAllBtn.addEventListener('click', () => this.clearAllTasks());
         this.taskInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.addTask();
+        });
+
+        // Tab switching
+        this.tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchTab(e.target.dataset.tab);
+            });
         });
 
         // Settings modal event listeners
@@ -122,6 +135,84 @@ class TodoApp {
         if (!task) return;
 
         task.completed = !task.completed;
+        
+        // If task is completed, move it to trash
+        if (task.completed) {
+            this.moveTaskToTrash(taskId);
+        }
+        
+        this.saveToStorage();
+        this.render();
+    }
+
+    moveTaskToTrash(taskId) {
+        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) return;
+
+        const task = this.tasks.splice(taskIndex, 1)[0];
+        task.movedToTrashAt = new Date().toISOString();
+        this.trashedTasks.push(task);
+    }
+
+    clearAllTasks() {
+        if (this.tasks.length === 0) {
+            alert('No tasks to clear!');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to move all ${this.tasks.length} active tasks to trash?`)) {
+            // Mark all tasks as completed and move to trash
+            this.tasks.forEach(task => {
+                task.completed = true;
+                task.movedToTrashAt = new Date().toISOString();
+            });
+            
+            this.trashedTasks.push(...this.tasks);
+            this.tasks = [];
+            
+            this.saveToStorage();
+            this.render();
+            
+            // Show a success message
+            alert(`${this.trashedTasks.length} tasks moved to trash!`);
+        }
+    }
+
+    switchTab(tab) {
+        this.currentTab = tab;
+        
+        // Update tab buttons
+        this.tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        
+        // Show/hide containers
+        if (tab === 'active') {
+            this.tasksContainer.style.display = 'block';
+            this.trashContainer.style.display = 'none';
+        } else {
+            this.tasksContainer.style.display = 'none';
+            this.trashContainer.style.display = 'block';
+        }
+        
+        this.render();
+    }
+
+    deleteTaskFromTrash(taskId) {
+        this.trashedTasks = this.trashedTasks.filter(task => task.id !== taskId);
+        this.saveToStorage();
+        this.render();
+    }
+
+    restoreTaskFromTrash(taskId) {
+        const taskIndex = this.trashedTasks.findIndex(t => t.id === taskId);
+        if (taskIndex === -1) return;
+
+        const task = this.trashedTasks.splice(taskIndex, 1)[0];
+        task.completed = false;
+        delete task.movedToTrashAt;
+        this.tasks.push(task);
+        
         this.saveToStorage();
         this.render();
     }
@@ -506,6 +597,7 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
     saveToStorage() {
         localStorage.setItem('todoApp', JSON.stringify({
             tasks: this.tasks,
+            trashedTasks: this.trashedTasks,
             taskCounter: this.taskCounter
         }));
     }
@@ -515,19 +607,83 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
         if (data) {
             const parsed = JSON.parse(data);
             this.tasks = parsed.tasks || [];
+            this.trashedTasks = parsed.trashedTasks || [];
             this.taskCounter = parsed.taskCounter || 0;
             this.render();
         }
     }
 
     render() {
+        if (this.currentTab === 'active') {
+            this.renderActiveTasks();
+        } else {
+            this.renderTrashTasks();
+        }
+    }
+
+    renderActiveTasks() {
         if (this.tasks.length === 0) {
-            this.tasksContainer.innerHTML = '<div class="empty-state">No tasks yet. Add your first task above!</div>';
+            this.tasksContainer.innerHTML = '<div class="empty-state">No active tasks. Add your first task above!</div>';
             return;
         }
 
-        this.tasksContainer.innerHTML = this.tasks.map(task => this.renderTask(task)).join('');
-        this.attachEventListeners();
+        this.tasksContainer.innerHTML = this.tasks.map(task => this.renderActiveTask(task)).join('');
+        this.attachActiveTaskEventListeners();
+    }
+
+    renderTrashTasks() {
+        if (this.trashedTasks.length === 0) {
+            this.trashContainer.innerHTML = '<div class="empty-state">No tasks in trash. Completed tasks will appear here.</div>';
+            return;
+        }
+
+        this.trashContainer.innerHTML = this.trashedTasks.map(task => this.renderTrashTask(task)).join('');
+        this.attachTrashTaskEventListeners();
+    }
+
+    renderActiveTask(task) {
+        const subtasksHtml = task.subtasks.map(subtask => this.renderSubtask(task.id, subtask)).join('');
+        
+        return `
+            <div class="task-item" data-task-id="${task.id}">
+                <div class="task-header">
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
+                           data-task-id="${task.id}">
+                    <div class="task-title ${task.completed ? 'completed' : ''}" 
+                         contenteditable="true" 
+                         data-task-id="${task.id}">${task.title}</div>
+                    <div class="task-actions">
+                        <button class="plan-for-me-btn" data-task-id="${task.id}">
+                            <span class="magic-wand">🪄</span> PlanForMe
+                        </button>
+                        <button class="add-subtask-btn" data-task-id="${task.id}">+ Subtask</button>
+                        <button class="delete-task-btn" data-task-id="${task.id}">✕</button>
+                    </div>
+                </div>
+                <div class="subtasks-container">
+                    ${subtasksHtml}
+                    <input type="text" class="add-subtask-input" data-task-id="${task.id}" 
+                           placeholder="Add a subtask..." style="display: none;">
+                </div>
+            </div>
+        `;
+    }
+
+    renderTrashTask(task) {
+        const movedDate = new Date(task.movedToTrashAt).toLocaleDateString();
+        
+        return `
+            <div class="task-item trash-task" data-task-id="${task.id}">
+                <div class="task-header">
+                    <div class="task-title completed">${task.title}</div>
+                    <div class="task-meta">Moved to trash: ${movedDate}</div>
+                    <div class="task-actions">
+                        <button class="restore-task-btn" data-task-id="${task.id}">↩️ Restore</button>
+                        <button class="delete-forever-btn" data-task-id="${task.id}">🗑️ Delete Forever</button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     renderTask(task) {
@@ -574,7 +730,7 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
         `;
     }
 
-    attachEventListeners() {
+    attachActiveTaskEventListeners() {
         // Task checkboxes
         document.querySelectorAll('.task-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
@@ -684,6 +840,26 @@ Respond with ONLY the cat message, no quotes or extra formatting.`;
                 const taskId = parseInt(e.target.dataset.taskId);
                 const subtaskId = parseInt(e.target.dataset.subtaskId);
                 this.deleteSubtask(taskId, subtaskId);
+            });
+        });
+    }
+
+    attachTrashTaskEventListeners() {
+        // Restore task buttons
+        document.querySelectorAll('.restore-task-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = parseInt(e.target.dataset.taskId);
+                this.restoreTaskFromTrash(taskId);
+            });
+        });
+
+        // Delete forever buttons
+        document.querySelectorAll('.delete-forever-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = parseInt(e.target.dataset.taskId);
+                if (confirm('Are you sure you want to permanently delete this task?')) {
+                    this.deleteTaskFromTrash(taskId);
+                }
             });
         });
     }
