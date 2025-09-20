@@ -7,6 +7,23 @@ class TodoApp {
             apiKey: '',
             deploymentName: 'gpt-4'
         };
+        this.catMessages = [
+            "Purr-fect! Another task to tackle! 🐾",
+            "Meow! You're really kitten around with productivity! 😸",
+            "I'm feline good about this new task! 😺",
+            "Paws-itive vibes for your new goal! 🐱",
+            "You've got to be kitten me - another one? I love it! 😹",
+            "Fur real? That's a great task! 🙀",
+            "I'm not lion - you're on fire today! 🦁",
+            "Claw-some! Let's get this done! 😼",
+            "Whiskers crossed for your success! 🤞",
+            "That's the cat's pajamas of productivity! 😻",
+            "I'm pawsitively impressed by your ambition! 🐾",
+            "Meow is the time to get things done! ⏰",
+            "You're the cat's meow when it comes to planning! 🎵",
+            "Fur-tunately, I'm here to cheer you on! 📣",
+            "This task has me purring with excitement! 😸"
+        ];
         this.init();
         this.loadFromStorage();
         this.loadApiSettings();
@@ -25,6 +42,8 @@ class TodoApp {
         this.testConnectionBtn = document.getElementById('testConnectionBtn');
         this.saveSettingsBtn = document.getElementById('saveSettingsBtn');
         this.connectionStatus = document.getElementById('connectionStatus');
+        this.catContainer = document.getElementById('catContainer');
+        this.speechBubble = document.getElementById('speechBubble');
 
         // Event listeners
         this.addTaskBtn.addEventListener('click', () => this.addTask());
@@ -63,6 +82,9 @@ class TodoApp {
         this.taskInput.value = '';
         this.saveToStorage();
         this.render();
+        
+        // Show cute cat with witty message
+        this.showCat();
     }
 
     addSubtask(taskId, subtaskTitle) {
@@ -309,6 +331,33 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
             const lines = content.split('\n').filter(line => line.trim());
             return lines.map(line => line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').trim()).slice(0, 10);
         }
+    }
+
+    // Cute Cat Feature
+    showCat() {
+        // Get random witty message
+        const randomMessage = this.catMessages[Math.floor(Math.random() * this.catMessages.length)];
+        this.speechBubble.textContent = randomMessage;
+        
+        // Show cat container
+        this.catContainer.classList.add('show');
+        
+        // Show speech bubble after a short delay
+        setTimeout(() => {
+            this.speechBubble.classList.add('show');
+        }, 300);
+        
+        // Hide cat after 4 seconds
+        setTimeout(() => {
+            this.hideCat();
+        }, 4000);
+    }
+    
+    hideCat() {
+        this.speechBubble.classList.remove('show');
+        setTimeout(() => {
+            this.catContainer.classList.remove('show');
+        }, 300);
     }
 
     saveToStorage() {
