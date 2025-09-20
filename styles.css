@@ -675,6 +675,16 @@ h1 {
     transform: scale(1);
 }
 
+.speech-bubble.thinking {
+    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    animation: thinkingPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes thinkingPulse {
+    0% { background: linear-gradient(45deg, #f0f0f0, #e0e0e0); }
+    100% { background: linear-gradient(45deg, #e0e0e0, #d0d0d0); }
+}
+
 .speech-bubble::after {
     content: '';
     position: absolute;

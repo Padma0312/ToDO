@@ -90,8 +90,8 @@ class TodoApp {
         this.saveToStorage();
         this.render();
         
-        // Show cute cat with witty message
-        this.showCat();
+        // Show cute cat with AI-generated witty message about this specific task
+        this.showCat(title);
     }
 
     addSubtask(taskId, subtaskTitle) {
@@ -340,9 +340,84 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
         }
     }
 
+    async generateCatMessage(taskText) {
+        // If no AI credentials, fall back to static messages
+        if (!this.apiSettings.endpoint || !this.apiSettings.apiKey) {
+            return this.getRandomStaticMessage();
+        }
+
+        try {
+            const prompt = `You are a cute, witty cat assistant in a to-do app. The user just added this task: "${taskText}"
+
+Generate a short, clever, cat-themed response (20-30 words max) that:
+- References the specific task in a witty way
+- Uses cat puns, cat behavior, or feline humor
+- Is encouraging and playful
+- Includes appropriate cat emojis
+
+Examples:
+- Task: "Buy groceries" → "Time to hunt for the finest treats! This cat approves of your meal planning prowess! 🐾🛒"
+- Task: "Exercise" → "Ready to pounce into action? Even cats need their stretches and zoomies! 😸💪"
+
+Respond with ONLY the cat message, no quotes or extra text.`;
+
+            const endpoint = this.apiSettings.endpoint.endsWith('/') 
+                ? this.apiSettings.endpoint.slice(0, -1) 
+                : this.apiSettings.endpoint;
+            
+            const url = `${endpoint}/openai/deployments/${this.apiSettings.deploymentName}/chat/completions?api-version=2024-02-15-preview`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'api-key': this.apiSettings.apiKey
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a witty cat assistant that makes clever, short responses about tasks. Always respond with just the cat message, no quotes.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    max_tokens: 100,
+                    temperature: 0.9
+                })
+            });
+
+            if (!response.ok) {
+                console.warn('AI cat message failed, using fallback');
+                return this.getRandomStaticMessage();
+            }
+
+            const data = await response.json();
+            const aiMessage = data.choices[0].message.content.trim();
+            
+            // Validate the message isn't too long and contains some cat-like elements
+            if (aiMessage.length > 150) {
+                return this.getRandomStaticMessage();
+            }
+            
+            console.log('🤖 AI Cat Message:', aiMessage);
+            return aiMessage;
+            
+        } catch (error) {
+            console.warn('AI cat message error:', error);
+            return this.getRandomStaticMessage();
+        }
+    }
+
+    getRandomStaticMessage() {
+        return this.catMessages[Math.floor(Math.random() * this.catMessages.length)];
+    }
+
     // Cute Cat Feature
-    showCat() {
-        console.log('🐱 showCat() called');
+    async showCat(taskText = null) {
+        console.log('🐱 showCat() called with task:', taskText);
         
         // Check if elements exist
         if (!this.catContainer || !this.speechBubble) {
@@ -353,26 +428,39 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
             return;
         }
         
-        // Get random witty message
-        const randomMessage = this.catMessages[Math.floor(Math.random() * this.catMessages.length)];
-        console.log('💬 Cat message:', randomMessage);
-        this.speechBubble.textContent = randomMessage;
-        
-        // Show cat container
+        // Show cat container first
         console.log('🎬 Showing cat container');
         this.catContainer.classList.add('show');
         
-        // Show speech bubble after a short delay
-        setTimeout(() => {
-            console.log('💭 Showing speech bubble');
-            this.speechBubble.classList.add('show');
-        }, 300);
+        // Generate message (AI or fallback)
+        let message;
+        if (taskText) {
+            console.log('🤖 Generating AI cat message for task...');
+            this.speechBubble.textContent = "Let me think of something witty... 🤔";
+            this.speechBubble.classList.add('show', 'thinking');
+            
+            message = await this.generateCatMessage(taskText);
+            this.speechBubble.classList.remove('thinking');
+        } else {
+            message = this.getRandomStaticMessage();
+        }
         
-        // Hide cat after 4 seconds
+        console.log('💬 Final cat message:', message);
+        this.speechBubble.textContent = message;
+        
+        // Show speech bubble if not already shown
+        if (!this.speechBubble.classList.contains('show')) {
+            setTimeout(() => {
+                console.log('💭 Showing speech bubble');
+                this.speechBubble.classList.add('show');
+            }, 300);
+        }
+        
+        // Hide cat after 5 seconds (longer for AI messages)
         setTimeout(() => {
             console.log('👋 Hiding cat');
             this.hideCat();
-        }, 4000);
+        }, 5000);
     }
     
     hideCat() {
