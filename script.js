@@ -61,7 +61,8 @@ class TodoApp {
         // Test cat button
         this.testCatBtn.addEventListener('click', () => {
             console.log('🧪 Test cat button clicked');
-            this.showCat();
+            // Use AI to generate a message about testing the cat feature
+            this.showCat('testing my awesome cat assistant');
         });
         
         // Close modal when clicking outside
@@ -349,17 +350,19 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
         try {
             const prompt = `You are a cute, witty cat assistant in a to-do app. The user just added this task: "${taskText}"
 
-Generate a short, clever, cat-themed response (20-30 words max) that:
+Generate a short, clever, cat-themed response (15-35 words max) that:
 - References the specific task in a witty way
 - Uses cat puns, cat behavior, or feline humor
 - Is encouraging and playful
-- Includes appropriate cat emojis
+- Includes appropriate cat emojis (🐾, 😸, 😺, 🐱, etc.)
+- Sounds like something a clever cat would say
 
 Examples:
 - Task: "Buy groceries" → "Time to hunt for the finest treats! This cat approves of your meal planning prowess! 🐾🛒"
 - Task: "Exercise" → "Ready to pounce into action? Even cats need their stretches and zoomies! 😸💪"
+- Task: "Study for exam" → "Time to sharpen those claws... I mean study skills! You'll ace this like a cat landing on its feet! 🐾📚"
 
-Respond with ONLY the cat message, no quotes or extra text.`;
+Respond with ONLY the cat message, no quotes or extra formatting.`;
 
             const endpoint = this.apiSettings.endpoint.endsWith('/') 
                 ? this.apiSettings.endpoint.slice(0, -1) 
@@ -377,33 +380,37 @@ Respond with ONLY the cat message, no quotes or extra text.`;
                     messages: [
                         {
                             role: 'system',
-                            content: 'You are a witty cat assistant that makes clever, short responses about tasks. Always respond with just the cat message, no quotes.'
+                            content: 'You are a witty cat assistant that makes clever, short responses about tasks. Always respond with just the cat message, no quotes. Include cat puns and emojis. Keep responses between 15-35 words.'
                         },
                         {
                             role: 'user',
                             content: prompt
                         }
                     ],
-                    max_tokens: 100,
-                    temperature: 0.9
+                    max_tokens: 120,
+                    temperature: 0.8
                 })
             });
 
             if (!response.ok) {
-                console.warn('AI cat message failed, using fallback');
+                console.warn('AI cat message failed, using fallback. Status:', response.status);
                 return this.getRandomStaticMessage();
             }
 
             const data = await response.json();
             const aiMessage = data.choices[0].message.content.trim();
             
-            // Validate the message isn't too long and contains some cat-like elements
-            if (aiMessage.length > 150) {
+            // Clean up the message (remove quotes if present)
+            const cleanMessage = aiMessage.replace(/^["']|["']$/g, '');
+            
+            // Validate the message isn't too long
+            if (cleanMessage.length > 200) {
+                console.warn('AI message too long, using fallback');
                 return this.getRandomStaticMessage();
             }
             
-            console.log('🤖 AI Cat Message:', aiMessage);
-            return aiMessage;
+            console.log('🤖 AI Cat Message:', cleanMessage);
+            return cleanMessage;
             
         } catch (error) {
             console.warn('AI cat message error:', error);
@@ -434,19 +441,31 @@ Respond with ONLY the cat message, no quotes or extra text.`;
         
         // Generate message (AI or fallback)
         let message;
-        if (taskText) {
-            console.log('🤖 Generating AI cat message for task...');
+        if (taskText && this.apiSettings.endpoint && this.apiSettings.apiKey) {
+            console.log('🤖 Generating AI cat message for task:', taskText);
             this.speechBubble.textContent = "Let me think of something witty... 🤔";
             this.speechBubble.classList.add('show', 'thinking');
             
             message = await this.generateCatMessage(taskText);
             this.speechBubble.classList.remove('thinking');
         } else {
+            if (!taskText) {
+                console.log('📝 No task text provided, using static message');
+            } else if (!this.apiSettings.endpoint || !this.apiSettings.apiKey) {
+                console.log('🔑 No AI credentials configured, using static message');
+            }
             message = this.getRandomStaticMessage();
         }
         
         console.log('💬 Final cat message:', message);
         this.speechBubble.textContent = message;
+        
+        // Add AI indicator if message was generated by AI
+        if (taskText && this.apiSettings.endpoint && this.apiSettings.apiKey) {
+            this.speechBubble.setAttribute('data-ai', 'true');
+        } else {
+            this.speechBubble.setAttribute('data-ai', 'false');
+        }
         
         // Show speech bubble if not already shown
         if (!this.speechBubble.classList.contains('show')) {
