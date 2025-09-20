@@ -44,7 +44,6 @@ class TodoApp {
         this.connectionStatus = document.getElementById('connectionStatus');
         this.catContainer = document.getElementById('catContainer');
         this.speechBubble = document.getElementById('speechBubble');
-        this.testCatBtn = document.getElementById('testCatBtn');
 
         // Event listeners
         this.addTaskBtn.addEventListener('click', () => this.addTask());
@@ -57,13 +56,6 @@ class TodoApp {
         this.closeModal.addEventListener('click', () => this.closeSettings());
         this.saveSettingsBtn.addEventListener('click', () => this.saveApiSettings());
         this.testConnectionBtn.addEventListener('click', () => this.testConnection());
-        
-        // Test cat button
-        this.testCatBtn.addEventListener('click', () => {
-            console.log('🧪 Test cat button clicked');
-            // Use static messages for test button
-            this.showCat();
-        });
         
         // Close modal when clicking outside
         window.addEventListener('click', (e) => {

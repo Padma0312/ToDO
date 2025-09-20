@@ -47,12 +47,7 @@ h1 {
     text-align: center;
 }
 
-.header-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.settings-btn, .test-cat-btn {
+.settings-btn {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
@@ -64,7 +59,7 @@ h1 {
     backdrop-filter: blur(10px);
 }
 
-.settings-btn:hover, .test-cat-btn:hover {
+.settings-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
 }
