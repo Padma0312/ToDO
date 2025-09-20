@@ -44,6 +44,7 @@ class TodoApp {
         this.connectionStatus = document.getElementById('connectionStatus');
         this.catContainer = document.getElementById('catContainer');
         this.speechBubble = document.getElementById('speechBubble');
+        this.testCatBtn = document.getElementById('testCatBtn');
 
         // Event listeners
         this.addTaskBtn.addEventListener('click', () => this.addTask());
@@ -56,6 +57,12 @@ class TodoApp {
         this.closeModal.addEventListener('click', () => this.closeSettings());
         this.saveSettingsBtn.addEventListener('click', () => this.saveApiSettings());
         this.testConnectionBtn.addEventListener('click', () => this.testConnection());
+        
+        // Test cat button
+        this.testCatBtn.addEventListener('click', () => {
+            console.log('🧪 Test cat button clicked');
+            this.showCat();
+        });
         
         // Close modal when clicking outside
         window.addEventListener('click', (e) => {
@@ -335,25 +342,43 @@ Example response format: ["Subtask 1", "Subtask 2", "Subtask 3"]`;
 
     // Cute Cat Feature
     showCat() {
+        console.log('🐱 showCat() called');
+        
+        // Check if elements exist
+        if (!this.catContainer || !this.speechBubble) {
+            console.error('❌ Cat elements not found:', {
+                catContainer: this.catContainer,
+                speechBubble: this.speechBubble
+            });
+            return;
+        }
+        
         // Get random witty message
         const randomMessage = this.catMessages[Math.floor(Math.random() * this.catMessages.length)];
+        console.log('💬 Cat message:', randomMessage);
         this.speechBubble.textContent = randomMessage;
         
         // Show cat container
+        console.log('🎬 Showing cat container');
         this.catContainer.classList.add('show');
         
         // Show speech bubble after a short delay
         setTimeout(() => {
+            console.log('💭 Showing speech bubble');
             this.speechBubble.classList.add('show');
         }, 300);
         
         // Hide cat after 4 seconds
         setTimeout(() => {
+            console.log('👋 Hiding cat');
             this.hideCat();
         }, 4000);
     }
     
     hideCat() {
+        console.log('🫥 hideCat() called');
+        if (!this.speechBubble || !this.catContainer) return;
+        
         this.speechBubble.classList.remove('show');
         setTimeout(() => {
             this.catContainer.classList.remove('show');
