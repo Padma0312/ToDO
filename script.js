@@ -61,8 +61,8 @@ class TodoApp {
         // Test cat button
         this.testCatBtn.addEventListener('click', () => {
             console.log('🧪 Test cat button clicked');
-            // Use AI to generate a message about testing the cat feature
-            this.showCat('testing my awesome cat assistant');
+            // Use static messages for test button
+            this.showCat();
         });
         
         // Close modal when clicking outside
